@@ -4,7 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MusicVibe Player</title>
-
     <style>
       body {
         margin: 0;
@@ -12,33 +11,31 @@
         background: #f4f4f4;
       }
 
-      /* ===== BEAUTIFUL HEADER ===== */
       header {
         position: sticky;
         top: 0;
-        width: 100%;
         background: #fff;
-        box-shadow: 0px 0px 8px #ccc;
+        box-shadow: 0 0 8px #ccc;
         display: flex;
         justify-content: space-between;
         align-items: center;
         padding: 15px 30px;
-        box-sizing: border-box;
         z-index: 1000;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       }
 
       nav {
         display: flex;
         gap: 25px;
       }
+
       nav a {
         text-decoration: none;
-        color: rgb(114, 114, 114);
+        color: #727272;
         font-size: 14px;
         position: relative;
         transition: 0.3s;
       }
+
       nav a::after {
         content: "";
         position: absolute;
@@ -49,18 +46,18 @@
         background: #00ffee;
         transition: 0.3s;
       }
+
       nav a:hover::after {
         width: 100%;
       }
+
       .menu-toggle {
         display: none;
         font-size: 24px;
         cursor: pointer;
-      } /* ===== MOBILE ===== */
+      }
+
       @media (max-width: 768px) {
-        header {
-          padding: 15px !important;
-        }
         nav {
           position: absolute;
           top: 63px;
@@ -78,6 +75,7 @@
           display: block;
         }
       }
+
       .logo {
         font-size: 22px;
         font-weight: bold;
@@ -96,29 +94,41 @@
         }
       }
 
+      .container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 20px;
+        width: 95%;
+        max-width: 1200px;
+        margin: 30px auto;
+      }
+
       .player-section {
-        width: 90%;
-        max-width: 900px;
+        flex: 2 1 600px;
         background: #fff;
         border-radius: 10px;
         overflow: hidden;
         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        display: flex;
+        flex-direction: column;
       }
 
       .video-wrapper {
         position: relative;
-        padding-top: 56.25%;
+        padding-top: 56.25%; /* 16:9 aspect */
       }
+
       .video-wrapper iframe {
         position: absolute;
         top: 0;
+        left: 0;
         width: 100%;
         height: 100%;
         border: 0;
       }
 
       .controls {
-        position: relative; /* for buffer text positioning */
         display: flex;
         align-items: center;
         gap: 15px;
@@ -164,30 +174,32 @@
         top: -20px;
         left: 50%;
         transform: translateX(-50%);
-        pointer-events: none;
         background: rgba(0, 0, 0, 0.5);
         padding: 2px 6px;
         border-radius: 4px;
         display: none;
+        pointer-events: none;
       }
 
       .video-list {
-        width: 400px;
+        flex: 1 1 250px;
         height: fit-content;
-        max-width: 900px;
+        min-width: 200px;
+        max-width: 350px;
         background: #fff;
         border-radius: 10px;
         box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
       }
 
       .video-item {
-        padding: 10px 15px;
-        cursor: pointer;
-        border-bottom: 1px solid #eee;
-        transition: 0.2s;
         display: flex;
-        align-items: center;
         gap: 10px;
+        padding: 10px 15px;
+        align-items: center;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+        transition: 0.2s;
       }
 
       .video-item img {
@@ -200,21 +212,29 @@
       .video-item:hover {
         background: #f0f0f0;
       }
+
       .active-video {
         background: #e0ffff;
         font-weight: bold;
       }
-      .wrp {
-        display: flex;
-        width: 1140px;
-        margin: auto;
-        padding: 15px 0px;
-        gap: 15px;
-        padding-top: 30px;
+
+      @media (max-width: 900px) {
+        .container {
+          flex-direction: column;
+          align-items: center;
+        }
+        .player-section {
+          flex: 0;
+          width: 100%;
+        }
+        .video-list {
+          flex: 0;
+          width: 100% !important;
+          max-width: 100% !important;
+        }
       }
     </style>
   </head>
-
   <body>
     <header>
       <div class="logo">🎵 MusicVibe</div>
@@ -225,7 +245,7 @@
       <div class="menu-toggle" onclick="toggleMenu()">☰</div>
     </header>
 
-    <div class="wrp">
+    <div class="container">
       <div class="player-section">
         <div class="video-wrapper">
           <iframe
@@ -235,7 +255,6 @@
             allowfullscreen
           ></iframe>
         </div>
-
         <div class="controls">
           <button id="playBtn">▶</button>
           <div class="time" id="timeDisplay">0:00 / 0:00</div>
@@ -269,34 +288,25 @@
       const bufferText = document.getElementById("bufferText");
       const videoList = document.getElementById("videoList");
 
-      let duration = 0;
-      let isReady = false;
-      let isDragging = false;
+      let duration = 0,
+        isReady = false,
+        isDragging = false;
 
-      /* Create video list with thumbnails */
       videos.forEach((video, index) => {
         const item = document.createElement("div");
         item.className = "video-item";
-
         const thumb = document.createElement("img");
         const title = document.createElement("span");
         title.textContent = video.title;
-
         item.appendChild(thumb);
         item.appendChild(title);
-
         if (index === 0) item.classList.add("active-video");
-
-        // Fetch thumbnail from Vimeo oEmbed
         fetch(
           `https://vimeo.com/api/oembed.json?url=https://vimeo.com/${video.id}`,
         )
           .then((res) => res.json())
-          .then((data) => {
-            thumb.src = data.thumbnail_url;
-          })
+          .then((data) => (thumb.src = data.thumbnail_url))
           .catch((err) => console.error(err));
-
         item.onclick = () => {
           document
             .querySelectorAll(".video-item")
@@ -304,27 +314,25 @@
           item.classList.add("active-video");
           loadVideo(video.id);
         };
-
         videoList.appendChild(item);
       });
 
-      /* Format time */
       function format(t) {
-        const m = Math.floor(t / 60);
-        const s = Math.floor(t % 60)
-          .toString()
-          .padStart(2, "0");
-        return m + ":" + s;
+        return (
+          Math.floor(t / 60) +
+          ":" +
+          Math.floor(t % 60)
+            .toString()
+            .padStart(2, "0")
+        );
       }
 
-      /* Load video */
       function loadVideo(id) {
         isReady = false;
         progress.style.width = "0%";
         timeDisplay.textContent = "0:00 / 0:00";
         playBtn.textContent = "▶";
         bufferText.style.display = "inline";
-
         player
           .loadVideo(id)
           .then(() => player.getDuration())
@@ -337,7 +345,6 @@
           .catch((err) => console.error(err));
       }
 
-      /* Player events */
       player.on("timeupdate", (data) => {
         if (!isReady || isDragging) return;
         let percent = (data.seconds / duration) * 100;
@@ -354,9 +361,7 @@
       player.on("pause", async () => {
         if (!(await player.getEnded())) playBtn.textContent = "▶";
       });
-      player.on("bufferstart", () => {
-        bufferText.style.display = "inline";
-      });
+      player.on("bufferstart", () => (bufferText.style.display = "inline"));
       player.on("bufferend", () => {
         if (!isDragging) bufferText.style.display = "none";
       });
@@ -365,14 +370,11 @@
         playBtn.textContent = "▶";
       });
 
-      /* Play/Pause button */
       playBtn.onclick = async () => {
         const paused = await player.getPaused();
-        if (paused) player.play();
-        else player.pause();
+        paused ? player.play() : player.pause();
       };
 
-      /* Draggable progress bar */
       function seek(e) {
         if (!isReady) return;
         const rect = progressContainer.getBoundingClientRect();
@@ -401,13 +403,11 @@
         }
       });
 
-      /* Fullscreen */
       fullscreenBtn.onclick = () => {
-        if (!document.fullscreenElement) iframe.requestFullscreen();
-        else document.exitFullscreen();
+        !document.fullscreenElement
+          ? iframe.requestFullscreen()
+          : document.exitFullscreen();
       };
-
-      /* Initialize first video duration */
       player.getDuration().then((d) => {
         duration = d;
         isReady = true;
