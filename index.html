@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MusicVibe Player</title>
+
     <style>
       body {
         margin: 0;
@@ -68,9 +69,11 @@
           padding: 20px;
           display: none;
         }
+
         nav.active {
           display: flex;
         }
+
         .menu-toggle {
           display: block;
         }
@@ -116,7 +119,7 @@
 
       .video-wrapper {
         position: relative;
-        padding-top: 56.25%; /* 16:9 aspect */
+        padding-top: 56.25%;
       }
 
       .video-wrapper iframe {
@@ -133,14 +136,15 @@
         align-items: center;
         gap: 15px;
         padding: 12px 15px;
-        background: #111;
-        color: #fff;
+        background: #ffffff;
+        color: #000000;
+        position: relative;
       }
 
       button {
         background: none;
         border: none;
-        color: #00ffee;
+        color: #394645;
         font-size: 18px;
         cursor: pointer;
       }
@@ -174,11 +178,10 @@
         top: -20px;
         left: 50%;
         transform: translateX(-50%);
-        background: rgba(0, 0, 0, 0.5);
-        padding: 2px 6px;
+        background: rgba(0, 0, 0, 0.6);
+        padding: 3px 8px;
         border-radius: 4px;
         display: none;
-        pointer-events: none;
       }
 
       .video-list {
@@ -223,25 +226,31 @@
           flex-direction: column;
           align-items: center;
         }
+
         .player-section {
           flex: 0;
           width: 100%;
         }
+
         .video-list {
-          flex: 0;
-          width: 100% !important;
-          max-width: 100% !important;
+          width: 100%;
+          max-width: 100%;
         }
       }
     </style>
   </head>
+
   <body>
     <header>
       <div class="logo">🎵 MusicVibe</div>
+
       <nav id="nav">
-        <a href="#">Home</a> <a href="#">Videos</a> <a href="#">Playlist</a>
+        <a href="#">Home</a>
+        <a href="#">Videos</a>
+        <a href="#">Playlist</a>
         <a href="#">Contact</a>
       </nav>
+
       <div class="menu-toggle" onclick="toggleMenu()">☰</div>
     </header>
 
@@ -250,18 +259,23 @@
         <div class="video-wrapper">
           <iframe
             id="mainPlayer"
-            src="https://player.vimeo.com/video/1169157236?controls=0"
+            src="https://player.vimeo.com/video/1169157236?controls=0&title=0&byline=0&portrait=0&badge=0&dnt=1"
             allow="autoplay; fullscreen"
             allowfullscreen
           ></iframe>
         </div>
+
         <div class="controls">
           <button id="playBtn">▶</button>
+          <buttonn id="loopbtn">loop</buttonn>
           <div class="time" id="timeDisplay">0:00 / 0:00</div>
+
           <div class="progress-container" id="progressContainer">
             <div class="progress" id="progress"></div>
           </div>
+
           <button id="fullscreenBtn">⛶</button>
+
           <span class="buffer" id="bufferText">Buffering...</span>
         </div>
       </div>
@@ -270,11 +284,13 @@
     </div>
 
     <script src="https://player.vimeo.com/api/player.js"></script>
+
     <script>
       const videos = [
         { id: "1169157236", title: "Tera Naam Hawaon Mein" },
         { id: "1169636573", title: "স্রোতের প্রবাহ" },
         { id: "1169658767", title: "স্রোতস্বিনী (Reverb)" },
+        { id: "1172252108", title: "শুধু অনুভুতি" },
       ];
 
       const iframe = document.getElementById("mainPlayer");
@@ -287,35 +303,15 @@
       const fullscreenBtn = document.getElementById("fullscreenBtn");
       const bufferText = document.getElementById("bufferText");
       const videoList = document.getElementById("videoList");
+      const loopBtn = document.getElementById("loopbtn");
 
-      let duration = 0,
-        isReady = false,
-        isDragging = false;
+      let duration = 0;
+      let isReady = false;
+      let isDragging = false;
+      let isLooping = false;
 
-      videos.forEach((video, index) => {
-        const item = document.createElement("div");
-        item.className = "video-item";
-        const thumb = document.createElement("img");
-        const title = document.createElement("span");
-        title.textContent = video.title;
-        item.appendChild(thumb);
-        item.appendChild(title);
-        if (index === 0) item.classList.add("active-video");
-        fetch(
-          `https://vimeo.com/api/oembed.json?url=https://vimeo.com/${video.id}`,
-        )
-          .then((res) => res.json())
-          .then((data) => (thumb.src = data.thumbnail_url))
-          .catch((err) => console.error(err));
-        item.onclick = () => {
-          document
-            .querySelectorAll(".video-item")
-            .forEach((i) => i.classList.remove("active-video"));
-          item.classList.add("active-video");
-          loadVideo(video.id);
-        };
-        videoList.appendChild(item);
-      });
+      let freezeTimer;
+      let lastTime = 0;
 
       function format(t) {
         return (
@@ -327,12 +323,49 @@
         );
       }
 
+      videos.forEach((video, index) => {
+        const item = document.createElement("div");
+        item.className = "video-item";
+
+        const thumb = document.createElement("img");
+        const title = document.createElement("span");
+
+        title.textContent = video.title;
+
+        item.appendChild(thumb);
+        item.appendChild(title);
+
+        if (index === 0) item.classList.add("active-video");
+
+        fetch(
+          `https://vimeo.com/api/oembed.json?url=https://vimeo.com/${video.id}`,
+        )
+          .then((res) => res.json())
+          .then((data) => (thumb.src = data.thumbnail_url));
+
+        item.onclick = () => {
+          document
+            .querySelectorAll(".video-item")
+            .forEach((i) => i.classList.remove("active-video"));
+          item.classList.add("active-video");
+          loadVideo(video.id);
+          isLooping = false;
+
+          loopBtn.textContent = "loop";
+        };
+
+        videoList.appendChild(item);
+      });
+
       function loadVideo(id) {
         isReady = false;
-        progress.style.width = "0%";
-        timeDisplay.textContent = "0:00 / 0:00";
-        playBtn.textContent = "▶";
         bufferText.style.display = "inline";
+
+        iframe.src =
+          "https://player.vimeo.com/video/" +
+          id +
+          "?controls=0&title=0&byline=0&portrait=0&badge=0&dnt=1";
+
         player
           .loadVideo(id)
           .then(() => player.getDuration())
@@ -341,50 +374,88 @@
             isReady = true;
             timeDisplay.textContent = "0:00 / " + format(duration);
             player.play();
-          })
-          .catch((err) => console.error(err));
+          });
       }
 
       player.on("timeupdate", (data) => {
         if (!isReady || isDragging) return;
+
         let percent = (data.seconds / duration) * 100;
-        if (percent > 99.8) percent = 99.8;
+
         progress.style.width = percent + "%";
+
         timeDisplay.textContent =
           format(data.seconds) + " / " + format(duration);
+
+        lastTime = data.seconds;
+
+        bufferText.style.display = "none";
+
+        clearTimeout(freezeTimer);
+
+        freezeTimer = setTimeout(async () => {
+          const paused = await player.getPaused();
+
+          if (!paused) {
+            bufferText.style.display = "inline";
+          }
+        }, 1500);
       });
+
+      playBtn.onclick = async () => {
+        const paused = await player.getPaused();
+
+        if (paused) {
+          player.play();
+        } else {
+          player.pause();
+        }
+      };
 
       player.on("play", () => {
         playBtn.textContent = "⏸";
         bufferText.style.display = "none";
       });
+
       player.on("pause", async () => {
-        if (!(await player.getEnded())) playBtn.textContent = "▶";
+        if (!(await player.getEnded())) {
+          playBtn.textContent = "▶";
+        }
       });
-      player.on("bufferstart", () => (bufferText.style.display = "inline"));
-      player.on("bufferend", () => {
-        if (!isDragging) bufferText.style.display = "none";
-      });
+
       player.on("ended", () => {
         progress.style.width = "100%";
         playBtn.textContent = "▶";
+        player.setCurrentTime(0); // jump to start instantly
       });
 
-      playBtn.onclick = async () => {
-        const paused = await player.getPaused();
-        paused ? player.play() : player.pause();
+      loopBtn.onclick = async () => {
+        isLooping = !isLooping;
+
+        await player.setLoop(isLooping);
+
+        loopBtn.textContent = isLooping ? "Unloop" : "loop";
       };
 
       function seek(e) {
         if (!isReady) return;
+
         const rect = progressContainer.getBoundingClientRect();
+
         let percent = (e.clientX - rect.left) / rect.width;
+
         percent = Math.max(0, Math.min(1, percent));
+
         const newTime = percent * duration;
+
         progress.style.width = percent * 100 + "%";
-        bufferText.style.display = "inline";
+
+        bufferText.style.display = "inline"; // show buffering when sliding
+
         player.setCurrentTime(newTime).then(() => {
-          if (!isDragging) bufferText.style.display = "none";
+          setTimeout(() => {
+            bufferText.style.display = "none";
+          }, 800);
         });
       }
 
@@ -392,25 +463,32 @@
         isDragging = true;
         seek(e);
       });
+
       window.addEventListener("mousemove", (e) => {
         if (isDragging) seek(e);
       });
+
       window.addEventListener("mouseup", (e) => {
         if (isDragging) {
           seek(e);
+
           isDragging = false;
-          bufferText.style.display = "none";
         }
       });
 
       fullscreenBtn.onclick = () => {
-        !document.fullscreenElement
-          ? iframe.requestFullscreen()
-          : document.exitFullscreen();
+        if (!document.fullscreenElement) {
+          iframe.requestFullscreen();
+        } else {
+          document.exitFullscreen();
+        }
       };
+
       player.getDuration().then((d) => {
         duration = d;
+
         isReady = true;
+
         timeDisplay.textContent = "0:00 / " + format(duration);
       });
 
